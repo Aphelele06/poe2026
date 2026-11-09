@@ -1,0 +1,40 @@
+# Runs the MVC app together with SQL Server in Linux containers.
+# LocalDB / SQLEXPRESS on Windows are NOT reachable from inside a Linux container
+# (video 13 shows the "LocalDB is not supported on this platform" error), so the
+# database runs as its own container here.
+#
+#   1. copy .env.example to .env and fill in the two values
+#   2. docker compose up --build
+#   3. open http://localhost:8080
+services:
+  web:
+    build: .
+    image: raceway-mvc
+    ports:
+      - "8080:8080"
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=RaceDB;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true"
+      AzureStorage__ConnectionString: "${AZURE_STORAGE_CONNECTION_STRING}"
+      AzureStorage__ContainerName: "event-banners"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD}"
+    ports:
+      - "1433:1433"   # lets SSMS connect to localhost,1433 (videos 6-7)
+    volumes:
+      - sqldata:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  sqldata:

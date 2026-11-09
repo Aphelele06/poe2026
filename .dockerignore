@@ -1,0 +1,13 @@
+**/.vs
+**/.vscode
+**/.git
+**/.gitignore
+**/bin
+**/obj
+**/*.user
+**/.env
+**/secrets.json
+**/*.zip
+Dockerfile*
+docker-compose*
+README.md
